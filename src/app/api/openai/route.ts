@@ -6,15 +6,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    // Parse the request body
+    const body = await req.json();
+    const { extractedText } = body;
+
+    // Prepare the content for OpenAI
+    const content = extractedText 
+      ? `The following is text extracted from an uploaded document: ${extractedText.substring(0, 1000)}... How are you?`
+      : 'How are you?';
+
     // Make a request to OpenAI
     const response = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'user',
-          content: 'How are you?',
+          content: content,
         },
       ],
       max_tokens: 20,
@@ -23,7 +32,8 @@ export async function POST() {
     // Return the response
     return NextResponse.json({ 
       success: true, 
-      message: response.choices[0].message.content 
+      message: response.choices[0].message.content,
+      usedExtractedText: !!extractedText
     });
   } catch (error) {
     console.error('OpenAI API error:', error);
